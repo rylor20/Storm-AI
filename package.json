@@ -1,0 +1,8 @@
+{
+  "name": "storm-ai",
+  "version": "1.0.0",
+  "description": "Storm AI — Free Roblox Studio Assistant powered by Groq",
+  "dependencies": {
+    "pusher": "^5.2.0"
+  }
+}
