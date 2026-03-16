@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Storm AI — Roblox Studio Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg0:#07070e;--bg1:#0d0d16;--bg2:#13131c;--bg3:#1a1a26;--border:#22223a;--accent:#6c8ef7;--accent2:#4dd9b0;--red:#ff4d6a;--yellow:#f7c948;--purple:#b47fff;--t0:#eeeeff;--t1:#a0a0c0;--t2:#505070}
+html,body{height:100%;overflow:hidden;background:var(--bg0)}
+body{font-family:'Syne',sans-serif;color:var(--t0);display:flex;flex-direction:column;height:100vh}
+header{display:flex;align-items:center;gap:10px;padding:0 16px;height:50px;border-bottom:1px solid var(--border);background:var(--bg1);flex-shrink:0}
+.logo{display:flex;align-items:center;gap:7px;font-size:16px;font-weight:800}
+.logo-text{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hrow{display:flex;gap:7px;align-items:center;margin-left:auto}
+.pill{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-family:'JetBrains Mono',monospace;border:1px solid var(--border);background:var(--bg2);color:var(--t2);transition:all .3s}
+.pill.ok{border-color:#1a3a28;color:var(--accent2)}.dot{width:5px;height:5px;border-radius:50%;background:var(--t2);flex-shrink:0}
+.pill.ok .dot{background:var(--accent2);box-shadow:0 0 4px var(--accent2)}
+.sid-badge{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent2);padding:3px 9px;border:1px solid #1a3a28;border-radius:4px;background:var(--bg2);letter-spacing:2px;cursor:pointer}
+.hbtn{padding:4px 10px;border-radius:5px;font-size:10px;font-family:'JetBrains Mono',monospace;cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--t1);transition:all .2s}
+.hbtn:hover{background:var(--bg3);color:var(--t0)}.hbtn.up{border-color:#2a2a4a;color:var(--accent)}
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg1);flex-shrink:0}
+.tab{padding:8px 16px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.tab:hover{color:var(--t1)}.tab.active{color:var(--t0);border-bottom-color:var(--accent)}
+.tab .bdg{display:inline-block;margin-left:5px;padding:1px 5px;border-radius:10px;font-size:9px;background:var(--bg3);color:var(--t2)}
+.tab.active .bdg{background:var(--accent);color:#fff}.tab.warn .bdg{background:#3a1a5a;color:var(--purple)}
+.layout{display:flex;flex:1;overflow:hidden}
+.sidebar{width:210px;border-right:1px solid var(--border);background:var(--bg1);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.sb-top{display:flex;align-items:center;justify-content:space-between;padding:7px 11px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-title{font-size:9px;font-family:'JetBrains Mono',monospace;letter-spacing:1.5px;color:var(--t2);text-transform:uppercase;font-weight:600}
+.sb-add{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--accent);cursor:pointer;padding:2px 6px;border-radius:4px}
+.sb-add:hover{background:var(--bg2)}
+.dz{margin:8px;border-radius:8px;border:2px dashed var(--border);padding:14px 10px;text-align:center;cursor:pointer;transition:all .3s;background:var(--bg0);flex-shrink:0}
+.dz:hover,.dz.over{border-color:var(--accent);background:#0d0d20}.dz.done{border-color:#1a3a28;background:#08130f}
+.dz-ico{font-size:20px;display:block;margin-bottom:4px}.dz-txt{font-size:10px;color:var(--t2);font-family:'JetBrains Mono',monospace;line-height:1.5}
+.dz-sub{font-size:9px;color:var(--t2);margin-top:3px;opacity:.5}.fname{font-size:10px;color:var(--accent2);font-family:'JetBrains Mono',monospace;margin-top:4px;word-break:break-all}
+.pbar{height:2px;background:var(--bg3);margin:0 8px 6px;border-radius:1px;overflow:hidden;flex-shrink:0}.pbar.h{display:none}
+.pfill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s;border-radius:1px}
+#tw{flex:1;overflow-y:auto;padding:4px 0;font-family:'JetBrains Mono',monospace;font-size:11px}
+.te{padding:12px;color:var(--t2);font-size:10px;line-height:1.6;font-family:'JetBrains Mono',monospace}
+.tn{display:flex;align-items:center;gap:5px;padding:2px 10px;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .12s}
+.tn.c{cursor:pointer}.tn.c:hover{background:var(--bg2);color:var(--t0)}.tn.ob{background:rgba(180,127,255,.05)}.tn.ob .tn-n{color:var(--purple)}.tn.sel{background:var(--bg3)}
+.ti{font-size:9px;flex-shrink:0}.ti-s{color:var(--accent)}.ti-ls{color:var(--accent2)}.ti-ms{color:var(--yellow)}.ti-f{color:var(--t2)}
+.ob-bdg{font-size:8px;color:var(--purple);font-family:'JetBrains Mono',monospace;margin-left:3px;opacity:.8}
+.mc{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.pnl{flex:1;display:none;flex-direction:column;overflow:hidden}.pnl.on{display:flex}
+#msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+.wlc{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;gap:12px;padding:30px}
+.wico{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:24px}
+.wlc h2{font-size:22px;font-weight:800;letter-spacing:-0.5px}.wlc p{color:var(--t1);font-size:13px;line-height:1.6;max-width:380px}
+.sbox{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 18px;max-width:360px;width:100%}
+.sbox p{font-size:10px;color:var(--t2);font-family:'JetBrains Mono',monospace;margin-bottom:6px;letter-spacing:.5px}
+.scode{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--accent2);letter-spacing:4px;text-align:center;padding:8px;background:var(--bg3);border-radius:6px;cursor:pointer;border:1px solid #1a3a28}
+.sugg{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:4px}
+.sug{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg2);color:var(--t1);font-size:11px;cursor:pointer;transition:all .2s;font-weight:600}
+.sug:hover{border-color:var(--accent);color:var(--t0);background:var(--bg3)}
+.msg{display:flex;gap:9px;animation:fu .22s ease}@keyframes fu{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.mav{width:27px;height:27px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;margin-top:2px;font-family:'JetBrains Mono',monospace;font-weight:700}
+.msg.user .mav{background:var(--bg3);color:var(--t1)}.msg.ai .mav{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.mbody{flex:1;min-width:0}.mname{font-size:9px;font-weight:700;letter-spacing:.5px;margin-bottom:4px;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
+.msg.user .mname{color:var(--t2)}.msg.ai .mname{color:var(--accent)}
+.mtext{font-size:13px;line-height:1.7;color:var(--t1);white-space:pre-wrap;word-break:break-word}.msg.user .mtext{color:var(--t0)}
+.mtext code{font-family:'JetBrains Mono',monospace;background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:11px;color:var(--accent2)}
+.cb{margin:8px 0;border-radius:7px;overflow:hidden;border:1px solid var(--border)}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:5px 12px;background:var(--bg3);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t2)}.ch span{color:var(--accent2)}
+.cbtn2{background:none;border:none;color:var(--t2);cursor:pointer;font-size:10px;font-family:'JetBrains Mono',monospace;padding:2px 6px;border-radius:3px}.cbtn2:hover{color:var(--t0);background:var(--bg2)}
+pre.cc{padding:10px 12px;background:#0c0c18;overflow-x:auto;margin:0;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;color:#cdd6f4}
+.ac{margin:5px 0;border-radius:7px;border:1px solid #1a3a28;background:#080f0a;overflow:hidden}
+.ah{padding:5px 12px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--accent2);background:#0b1a0e;display:flex;gap:6px}
+.ap{padding:4px 12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t2)}
+.typ{display:flex;gap:4px;padding:4px 0}.typ span{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:bk 1.2s infinite}
+.typ span:nth-child(2){animation-delay:.2s}.typ span:nth-child(3){animation-delay:.4s}
+@keyframes bk{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1.1)}}
+.eb{margin:0 14px 6px;padding:8px 12px;border-radius:8px;border:1px solid #3a1020;background:#100810;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--red);display:flex;gap:8px;cursor:pointer}
+.eb.h{display:none}
+.ia{padding:10px 14px 14px;border-top:1px solid var(--border);background:var(--bg1);flex-shrink:0}
+.ib{display:flex;align-items:flex-end;gap:8px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:7px 10px;transition:border-color .2s}.ib:focus-within{border-color:var(--accent)}
+#inp{flex:1;background:none;border:none;outline:none;font-size:13px;font-family:'Syne',sans-serif;color:var(--t0);resize:none;max-height:100px;min-height:22px;line-height:1.5}
+#inp::placeholder{color:var(--t2)}
+#sbtn{width:30px;height:30px;border-radius:7px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+#sbtn:hover{background:#8aa4ff;transform:scale(1.05)}#sbtn:active{transform:scale(.95)}#sbtn:disabled{background:var(--bg3);cursor:not-allowed;transform:none}
+#sbtn svg{width:13px;height:13px;fill:white}
+.ih{font-size:10px;color:var(--t2);font-family:'JetBrains Mono',monospace;margin-top:5px;text-align:center}
+/* Deobfuscator */
+.dp{flex:1;display:flex;overflow:hidden}.dl,.dr{flex:1;display:flex;flex-direction:column;overflow:hidden}.dl{border-right:1px solid var(--border)}
+.dh{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg1)}
+.dt{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--t2);text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.ds{font-size:10px;font-family:'JetBrains Mono',monospace;padding:2px 7px;border-radius:4px}
+.ds.ob{color:var(--red);background:#1a0808;border:1px solid #3a1010}.ds.cl{color:var(--accent2);background:#08150f;border:1px solid #1a3a28}.ds.no{color:var(--t2)}
+textarea.dc{flex:1;background:var(--bg0);border:none;outline:none;padding:12px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;color:#cdd6f4;resize:none;width:100%}
+textarea.dc::placeholder{color:var(--t2)}
+.df{padding:9px;border-top:1px solid var(--border);display:flex;gap:7px;flex-shrink:0;background:var(--bg1)}
+.db{flex:1;padding:7px;border-radius:6px;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--t1);font-weight:600;transition:all .2s}
+.db:hover{background:var(--bg3);color:var(--t0)}.db.pr{background:var(--accent);border-color:var(--accent);color:#fff}.db.pr:hover{background:#8aa4ff}.db.pr:disabled{background:var(--bg3);border-color:var(--border);color:var(--t2);cursor:not-allowed}
+.db.gr{background:#0d2018;border-color:#1a3a28;color:var(--accent2)}.db.gr:hover{background:#122820}
+.dol{padding:6px 8px;background:var(--bg0);border-bottom:1px solid var(--border);flex-shrink:0;max-height:80px;overflow-y:auto}
+.doi{display:flex;align-items:center;justify-content:space-between;padding:3px 6px;border-radius:4px;cursor:pointer;transition:background .15s}
+.doi:hover{background:var(--bg2)}.don{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--purple)}.dot2{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t2);background:var(--bg3);padding:1px 5px;border-radius:3px}
+.dhi{padding:30px 16px;text-align:center;color:var(--t2);font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.8}
+.dsp{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.dld{display:none;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:10px}
+/* Assets */
+.ap2{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.atb{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--border);background:var(--bg1);flex-shrink:0;flex-wrap:wrap}
+.atb span{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--t2)}.atb span b{color:var(--t0)}
+.abtn{padding:6px 12px;border-radius:6px;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--t1);font-weight:600;transition:all .2s}
+.abtn:hover{background:var(--bg3);color:var(--t0)}.abtn.go{background:linear-gradient(135deg,var(--accent),#5de8b0);border:none;color:#fff}.abtn.go:hover{opacity:.9}.abtn.go:disabled{background:var(--bg3);color:var(--t2);cursor:not-allowed}
+.al{flex:1;overflow-y:auto;padding:8px}
+.ae{padding:30px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t2);line-height:1.8}
+.ar{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg2);margin-bottom:5px;transition:border-color .2s}
+.ar.done{border-color:#1a3a28;background:#080f0a}.ar.fail{border-color:#3a1020;background:#100810}
+.ack{width:15px;height:15px;border-radius:4px;border:1px solid var(--border);cursor:pointer;flex-shrink:0;appearance:none;background:var(--bg3)}.ack:checked{background:var(--accent);border-color:var(--accent)}
+.ai2{flex:1;min-width:0}.an{font-size:11px;font-weight:600;color:var(--t0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.aid{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t2);margin-top:1px}
+.at2{font-size:9px;font-family:'JetBrains Mono',monospace;padding:2px 6px;border-radius:3px;flex-shrink:0}.at2.an2{background:#1a1a40;color:var(--accent)}.at2.sn{background:#1a3028;color:var(--accent2)}
+.ast{font-size:10px;font-family:'JetBrains Mono',monospace;flex-shrink:0;min-width:70px;text-align:right}.ast.done{color:var(--accent2)}.ast.fail{color:var(--red)}.ast.ld{color:var(--yellow)}
+.apg{padding:8px 14px;border-top:1px solid var(--border);background:var(--bg1);flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t1);display:flex;align-items:center;justify-content:space-between}
+.apg.h{display:none}.pgb{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;flex:1;margin:0 10px}
+.pgf{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s;border-radius:2px;width:0}
+/* Script panel */
+.sp{width:0;border-left:1px solid var(--border);background:var(--bg1);display:flex;flex-direction:column;overflow:hidden;transition:width .3s;flex-shrink:0}.sp.on{width:255px}
+.sph{padding:8px 11px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.spn{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--accent2);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:175px}
+.spx{background:none;border:none;color:var(--t2);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px}.spx:hover{color:var(--t0);background:var(--bg2)}
+.spob{font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--purple);background:#1a0a2a;border:1px solid #3a1a5a;border-radius:4px;padding:2px 6px;margin:6px 8px 0;display:none;text-align:center}.spob.on{display:block}
+.sps{flex:1;overflow:auto;padding:10px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;color:#cdd6f4;background:#0a0a14;white-space:pre}
+.spbs{padding:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:5px;flex-shrink:0}
+.spb{padding:7px;border-radius:6px;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer;border:1px solid var(--border);background:var(--bg2);font-weight:600;transition:all .2s;text-align:center}
+.spb.fix{color:var(--accent);border-color:#2a2a4a}.spb.fix:hover{background:#1a1a30}.spb.ask{color:var(--accent2);border-color:#1a3028}.spb.ask:hover{background:#0d2018}
+.spb.dob{color:var(--purple);border-color:#2a1a4a;background:#100a20}.spb.dob:hover{background:#1a1030}
+.bot-panel{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.bot-conn{display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid var(--border);background:var(--bg1);flex-shrink:0;flex-wrap:wrap}
+.bot-conn-pill{display:flex;align-items:center;gap:5px;font-size:10px;font-family:monospace;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg2);color:var(--t2)}
+.bot-conn-pill.ok{border-color:#1a3a28;color:var(--accent2)}.bot-conn-pill .dot2{width:5px;height:5px;border-radius:50%;background:var(--t2);flex-shrink:0}
+.bot-conn-pill.ok .dot2{background:var(--accent2);box-shadow:0 0 4px var(--accent2)}
+.bot-body{flex:1;display:flex;overflow:hidden}
+.bot-sidebar{width:260px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;padding:10px;gap:8px;flex-shrink:0;background:var(--bg1)}
+.bot-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.bot-field label{font-size:10px;font-family:monospace;color:var(--t2);display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
+.bot-field input,.bot-field textarea{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--t0);font-family:monospace;font-size:11px;outline:none}
+.bot-field input:focus,.bot-field textarea:focus{border-color:var(--accent)}
+.bot-field textarea{height:80px;resize:vertical;font-size:10px}
+.bot-field-row{display:flex;gap:6px}.bot-field-row .bot-field{flex:1}
+.bot-toggle{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--t1);font-family:monospace}
+.bot-toggle input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent)}
+.bot-btn{padding:8px;border-radius:7px;font-size:11px;font-family:monospace;cursor:pointer;border:none;font-weight:700;transition:all .2s;text-align:center;width:100%}
+.bot-btn.start{background:var(--accent2);color:#07070e}.bot-btn.start:hover{opacity:.9}
+.bot-btn.stop{background:var(--red);color:#fff}.bot-btn.stop:hover{opacity:.9}
+.bot-btn.save{background:var(--accent);color:#fff;margin-top:4px}.bot-btn.save:hover{opacity:.9}
+.bot-stat{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px;font-family:monospace}
+.bot-stat:last-child{border:none}.bot-sl{color:var(--t2)}.bot-sv{color:var(--t0);font-weight:600}
+.bot-sv.ok{color:var(--accent2)}.bot-sv.err{color:var(--red)}.bot-sv.warn{color:var(--yellow)}
+.bot-accs{padding:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;overflow-y:auto;flex:1}
+.bot-acc{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:8px;transition:border-color .3s}
+.bot-acc.joining{border-color:var(--yellow);animation:pulse .8s infinite}
+.bot-acc.in_game{border-color:var(--accent2)}.bot-acc.error,.bot-acc.rate_limited{border-color:var(--red)}
+.bot-acc.invalid{opacity:.4}.bot-acc.waiting,.bot-acc.leaving{border-color:var(--accent)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.bot-acc-name{font-size:11px;font-weight:700;color:var(--t0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bot-acc-status{font-size:9px;font-family:monospace;margin-top:2px}.bot-acc-visits{font-size:9px;color:var(--t2);font-family:monospace}
+.bot-log{flex:1;overflow-y:auto;padding:10px;font-family:monospace;font-size:10px;color:var(--t1);background:var(--bg0)}
+.bot-ll{padding:1px 0;line-height:1.5}.bot-ll.error{color:var(--red)}.bot-ll.warn{color:var(--yellow)}.bot-ll.ok{color:var(--accent2)}
+.bot-cd{font-size:13px;font-family:monospace;color:var(--accent);padding:6px 14px;border-top:1px solid var(--border);background:var(--bg1);text-align:center;display:none;flex-shrink:0}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.tst{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t0);transition:transform .3s;z-index:999;pointer-events:none;white-space:nowrap}
+.tst.on{transform:translateX(-50%) translateY(0)}.tst.ok{border-color:#1a3a28;color:var(--accent2)}.tst.wn{border-color:#3a3010;color:var(--yellow)}
+</style>
+</head>
+<body>
+<div class="tst" id="tst"></div>
+<header>
+  <div class="logo"><span>⚡</span><span class="logo-text">Storm AI</span></div>
+  <div class="hrow">
+    <div class="pill" id="ps"><span class="dot"></span>Studio</div>
+    <div class="sid-badge" id="sid-badge" onclick="cpSid()">···</div>
+    <button class="hbtn up" onclick="document.getElementById('fi').click()">Upload .rbxlx</button>
+    <button class="hbtn" onclick="clrChat()">Clear</button>
+  </div>
+</header>
+<input type="file" id="fi" accept=".rbxlx,.rbxl" style="display:none" onchange="handleFile(this)">
+<div class="tabs">
+  <div class="tab active" id="tab-chat" onclick="swTab('chat',this)">💬 Chat</div>
+  <div class="tab" id="tab-deob" onclick="swTab('deob',this)">🔓 Deobfuscator <span class="bdg" id="obc">0</span></div>
+  <div class="tab" id="tab-assets" onclick="swTab('assets',this)">🔄 Asset Reuploader <span class="bdg" id="asc">0</span></div>
+  <div class="tab" id="tab-bot" onclick="swTab('bot',this)">🤖 Bot Visit <span class="bdg" id="bot-status-bdg">OFF</span></div>
+</div>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-top"><span class="sb-title">Explorer</span><span class="sb-add" onclick="document.getElementById('fi').click()">+ Upload</span></div>
+    <div class="dz" id="dz" ondragover="dzO(event)" ondragleave="dzL()" ondrop="dzD(event)" onclick="document.getElementById('fi').click()">
+      <span class="dz-ico">📁</span><div class="dz-txt">Drop <b>.rbxlx</b> here</div><div class="dz-sub">or click to browse</div>
+    </div>
+    <div class="pbar h" id="pb"><div class="pfill" id="pf"></div></div>
+    <div id="tw"><div class="te">Upload your .rbxlx to see your game tree here.</div></div>
+  </aside>
+  <div class="mc">
+    <!-- CHAT -->
+    <div class="pnl on" id="pnl-chat">
+      <div id="eb" class="eb h" onclick="fixErr()">
+        <span>🔴</span><div><div style="font-weight:700;margin-bottom:2px">Studio Error</div><div id="et" style="color:#ff8a9a"></div><div style="color:var(--t2);margin-top:2px;font-size:10px">Click to fix automatically</div></div>
+      </div>
+      <div id="msgs">
+        <div class="wlc" id="wlc">
+          <div class="wico">⚡</div><h2>Storm AI</h2>
+          <p>Upload your <b>.rbxlx</b> file then ask me anything. Code goes straight into Studio. Use the tabs for deobfuscation and asset reuploading.</p>
+          <div class="sbox"><p>STUDIO PLUGIN SESSION CODE:</p><div class="scode" id="sid-big" onclick="cpSid()">Loading...</div><p style="margin-top:5px;font-size:10px;text-align:center;opacity:.5">Click to copy · Paste in Studio plugin</p></div>
+          <div class="sugg"><div class="sug" onclick="sug(this)">Fix my last error</div><div class="sug" onclick="sug(this)">Add a leaderboard</div><div class="sug" onclick="sug(this)">Make a kill brick</div><div class="sug" onclick="sug(this)">Create a round system</div></div>
+        </div>
+      </div>
+      <div class="ia"><div class="ib"><textarea id="inp" placeholder="Ask me anything about your game..." rows="1" onkeydown="hkey(event)" oninput="aR(this)"></textarea><button id="sbtn" onclick="send()"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg></button></div><div class="ih">Enter to send · Click any script in explorer · ⚠ = obfuscated</div></div>
+    </div>
+    <!-- DEOBFUSCATOR -->
+    <div class="pnl" id="pnl-deob">
+      <div class="dp">
+        <div class="dl">
+          <div class="dh"><span class="dt">Obfuscated Input</span><span class="ds no" id="dd">Paste code or click a script</span></div>
+          <div class="dol" id="dol" style="display:none"></div>
+          <textarea class="dc" id="di" placeholder="Paste obfuscated Lua/Luau code here...&#10;&#10;Or click a ⚠ script in the explorer ←&#10;&#10;Handles:&#10;• string.char() encoding&#10;• Variable name scrambling&#10;• Luarmor / Ironbrew bytecode&#10;• saveinstance() executor dumps&#10;• Decompiler artifacts (goto, unknowns)" oninput="detObf(this.value)"></textarea>
+          <div class="df"><button class="db" onclick="clrDob()">Clear</button><button class="db pr" id="dob-btn" onclick="runDob()">⚡ Deobfuscate</button></div>
+        </div>
+        <div class="dr">
+          <div class="dh"><span class="dt">Clean Output</span><div style="display:flex;gap:5px"><button class="db gr" style="padding:3px 9px;font-size:10px" onclick="cpDob()">Copy</button><button class="db" style="padding:3px 9px;font-size:10px" onclick="applyDob()">→ Studio</button></div></div>
+          <div class="dld" id="dld"><div class="dsp"></div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t2)">Deobfuscating with Claude AI...</div></div>
+          <div class="dhi" id="dhi">Clean deobfuscated Luau code will appear here.<br><br>Storm AI handles all Roblox obfuscation types:<br>Luarmor · Ironbrew · string.char · variable scrambling · executor dump artifacts</div>
+          <textarea class="dc" id="do" placeholder="Deobfuscated code appears here..." readonly style="display:none"></textarea>
+          <div class="df" id="dof" style="display:none"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent2)" id="dri"></span><button class="db gr" onclick="rplStudio()">✅ Apply to Studio</button></div>
+        </div>
+      </div>
+    </div>
+    <!-- ASSETS -->
+    <div class="pnl" id="pnl-assets">
+      <div class="ap2">
+        <div class="atb">
+          <span id="asm">Upload a .rbxlx file to scan for animation and sound IDs</span>
+          <div style="margin-left:auto;display:flex;gap:6px">
+            <button class="abtn" onclick="selAll()">Select All</button>
+            <button class="abtn go" id="rub" onclick="startRU()" disabled>🔄 Reupload Selected</button>
+          </div>
+        </div>
+        <div class="al" id="al"><div class="ae">Upload your .rbxlx file first.<br><br>Storm AI will find all Animation IDs and Sound IDs<br>and reupload them to your Roblox account.<br><br><span style="color:var(--t2);font-size:10px">Requires ROBLOSECURITY cookie in Vercel settings</span></div></div>
+        <div class="apg h" id="apg"><span id="pgt">Ready</span><div class="pgb"><div class="pgf" id="pgf"></div></div><span id="pgc">0/0</span></div>
+      </div>
+    </div>
+  </div>
+  <!-- Script side panel -->
+  <div class="sp" id="spp">
+    <div class="sph"><span class="spn" id="spn">Script</span><button class="spx" onclick="clsSP()">✕</button></div>
+    <div class="spob" id="spob">⚠ Obfuscated Script Detected</div>
+    <pre class="sps" id="sps"></pre>
+    <div class="spbs">
+      <button class="spb fix" onclick="fixSel()">⚡ Fix this script</button>
+      <button class="spb dob" id="sp-dob" onclick="dobSel()" style="display:none">🔓 Deobfuscate this</button>
+      <button class="spb ask" onclick="askSel()">💬 Ask about this</button>
+    </div>
+  </div>
+</div>
+<script>
+const SID=Math.random().toString(36).slice(2,8).toUpperCase();
+document.getElementById("sid-badge").textContent=SID;
+document.getElementById("sid-big").textContent=SID;
+let cHist=[],gTree={},srcs={},allAssets=[],lastErr=null,streaming=false,aiEl=null,aiRaw="",selSc=null,dobPath=null,xmlRaw="",obfList=[];
+
+function tst(m,t){const e=document.getElementById("tst");e.textContent=m;e.className="tst on"+(t?" "+t:"");clearTimeout(e._t);e._t=setTimeout(()=>e.className="tst",3000)}
+function swTab(id,el){document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));document.querySelectorAll(".pnl").forEach(p=>p.classList.remove("on"));el.classList.add("active");document.getElementById("pnl-"+id).classList.add("on")}
+function cpSid(){navigator.clipboard.writeText(SID);tst("Session code copied — paste in Studio plugin!","ok")}
+
+const psh=new Pusher(window.PUSHER_KEY||"",{cluster:window.PUSHER_CLUSTER||"us2"});
+const pch=psh.subscribe("session-"+SID);
+pch.bind("apply-actions",d=>{if(d.actions)d.actions.forEach(showAC);tst("✅ "+((d.actions||[]).length)+" change(s) sent to Studio!","ok")});
+
+async function poll(){try{const[tr,er]=await Promise.all([fetch("/api/sync-tree?sessionId="+SID),fetch("/api/report-error?sessionId="+SID)]);const td=await tr.json(),ed=await er.json();if(td.tree&&Object.keys(td.tree).length>0){mrgTree(td.tree);document.getElementById("ps").className="pill ok"}if(ed.error&&ed.error!==lastErr){lastErr=ed.error;showEb(lastErr)}}catch(_){}}
+setInterval(poll,3000);
+
+function isObf(code){if(!code||code.length<20)return false;const checks=[/string\.char\(\s*\d+(?:\s*,\s*\d+){5,}\s*\)/,/local\s+[a-zA-Z_]\s*=\s*\{[^}]{200,}\}/,/\b[a-z]{1,2}\s*=\s*[a-z]{1,2}\s*\([a-z]{1,2}/,/--\s*DECOMPILED|--\s*Decompiler|goto\s+\w+/i,/loadstring\s*\(|load\s*\(/,/local\s+[a-zA-Z_0-9]+\s*=\s*{(?:\s*\d+\s*,){20,}/];let s=0;for(const r of checks)if(r.test(code))s++;const kws=code.match(/\b(local|function|if|then|end|return|for|while|do)\b/g)||[];if(kws.length/Math.max(code.split("\n").length,1)<0.3&&code.length>200)s++;return s>=2}
+
+function detObf(code){const el=document.getElementById("dd");if(!code){el.className="ds no";el.textContent="Paste code or click a script";return}if(isObf(code)){el.className="ds ob";el.textContent="⚠ Obfuscation detected"}else{el.className="ds cl";el.textContent="✓ Looks clean"}}
+
+function pRbxlx(xml){xmlRaw=xml;const doc=new DOMParser().parseFromString(xml,"text/xml");const root={};srcs={};obfList=[];
+function gn(item){for(const p of item.querySelectorAll(":scope > Properties > string")){if(p.getAttribute("name")==="Name")return p.textContent}return"Unknown"}
+function wk(item,par,pp){const cls=item.getAttribute("class")||"";const n=gn(item);const path=pp?pp+"."+n:n;const node={__type:cls};
+if(["Script","LocalScript","ModuleScript"].includes(cls)){for(const p of item.querySelectorAll(":scope > Properties > ProtectedString, :scope > Properties > string")){if(p.getAttribute("name")==="Source"){const s=p.textContent.trim();if(s){srcs[path]=s;if(isObf(s))obfList.push({path,name:n,type:cls})}break}}}
+par[n]=node;for(const c of item.querySelectorAll(":scope > Item"))wk(c,node,path)}
+for(const item of doc.querySelectorAll("roblox > Item"))wk(item,root,"");return root}
+
+function handleFile(inp){const f=inp.files[0];if(f)ldFile(f)}
+function dzO(e){e.preventDefault();document.getElementById("dz").classList.add("over")}
+function dzL(){document.getElementById("dz").classList.remove("over")}
+function dzD(e){e.preventDefault();dzL();const f=e.dataTransfer.files[0];if(f)ldFile(f)}
+
+async function ldFile(file){
+if(!file.name.endsWith(".rbxlx")&&!file.name.endsWith(".rbxl")){tst("Please use a .rbxlx file");return}
+const bar=document.getElementById("pb"),fill=document.getElementById("pf");bar.classList.remove("h");fill.style.width="20%";
+const r=new FileReader();
+r.onload=async e=>{fill.style.width="70%";
+try{gTree=pRbxlx(e.target.result);fill.style.width="100%";setTimeout(()=>bar.classList.add("h"),400);
+rdTree(gTree);
+const dz=document.getElementById("dz");dz.className="dz done";dz.innerHTML=`<span class="dz-ico">✅</span><div class="fname">${file.name}</div><div class="dz-sub" style="margin-top:4px">Click to change</div>`;
+document.getElementById("obc").textContent=obfList.length;
+if(obfList.length>0){document.getElementById("tab-deob").classList.add("warn");updDobList();tst("⚠ "+obfList.length+" obfuscated script(s) detected","wn")}
+await fetch("/api/sync-tree",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sessionId:SID,tree:gTree})});
+await scnAssets();
+tst("✅ Loaded "+Object.keys(srcs).length+" scripts","ok");
+}catch(err){fill.style.background="var(--red)";setTimeout(()=>{bar.classList.add("h");fill.style.background=""},800);tst("Parse error: "+err.message)}};
+r.readAsText(file)}
+
+async function scnAssets(){if(!xmlRaw)return;try{const res=await fetch("/api/scan-assets",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({xmlContent:xmlRaw})});const d=await res.json();if(d.assets){allAssets=d.assets.map(a=>({...a,selected:true,status:"pending",newId:null}));rdAssets();document.getElementById("asc").textContent=allAssets.length;document.getElementById("asm").innerHTML=`Found <b>${allAssets.filter(a=>a.type==="Animation").length}</b> animations and <b>${allAssets.filter(a=>a.type==="Sound").length}</b> sounds`;if(allAssets.length>0)document.getElementById("rub").disabled=false}}catch(_){}}
+
+function rdAssets(){const list=document.getElementById("al");if(!allAssets.length){list.innerHTML='<div class="ae">No animation or sound IDs found.</div>';return}list.innerHTML="";for(const a of allAssets){const row=document.createElement("div");row.className="ar"+(a.status==="done"?" done":a.status==="fail"?" fail":"");row.id="ar-"+a.id;const st=a.status==="done"?"✅ "+a.newId:a.status==="fail"?"❌ Failed":a.status==="ld"?"⏳ ...":"Pending";row.innerHTML=`<input type="checkbox" class="ack" ${a.selected?"checked":""} onchange="tglA('${a.id}',this.checked)"><span style="font-size:14px">${a.type==="Animation"?"🎬":"🔊"}</span><div class="ai2"><div class="an">${a.name}</div><div class="aid">${a.id}</div></div><span class="at2 ${a.type==="Animation"?"an2":"sn"}">${a.type}</span><span class="ast ${a.status}" id="ast-${a.id}">${st}</span>`;list.appendChild(row)}}
+function tglA(id,c){const a=allAssets.find(x=>x.id===id);if(a)a.selected=c}
+function selAll(){allAssets.forEach(a=>a.selected=true);rdAssets()}
+async function startRU(){const sel=allAssets.filter(a=>a.selected&&a.status!=="done");if(!sel.length){tst("No assets selected");return}
+document.getElementById("rub").disabled=true;const pg=document.getElementById("apg"),fill=document.getElementById("pgf");pg.classList.remove("h");let done=0;document.getElementById("pgt").textContent="Reuploading...";document.getElementById("pgc").textContent="0/"+sel.length;
+for(let i=0;i<sel.length;i+=3){const batch=sel.slice(i,i+3);batch.forEach(a=>{a.status="ld";const el=document.getElementById("ast-"+a.id);if(el){el.className="ast ld";el.textContent="⏳ ..."}});
+try{const res=await fetch("/api/reupload-assets",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({assets:batch.map(a=>({id:a.id,type:a.type,name:a.name,path:a.path}))})});const d=await res.json();
+if(d.error){batch.forEach(a=>{a.status="fail";updAR(a,null,d.error)});tst("❌ "+d.error)}
+else{for(const r of d.results){const asset=allAssets.find(x=>x.id===r.oldId);if(asset){asset.status=r.success?"done":"fail";asset.newId=r.newId;updAR(asset,r.newId,r.error)}}}}
+catch(e){batch.forEach(a=>{a.status="fail";updAR(a,null,e.message)})}
+done+=batch.length;fill.style.width=(done/sel.length*100)+"%";document.getElementById("pgc").textContent=done+"/"+sel.length}
+const sc=allAssets.filter(a=>a.status==="done").length;document.getElementById("pgt").textContent="Done — "+sc+" reuploaded";document.getElementById("rub").disabled=false;
+if(sc>0){tst("✅ "+sc+" reuploaded! Download your updated file","ok");showDLBtn()}}
+
+function updAR(a,nid,err){const st=document.getElementById("ast-"+a.id),row=document.getElementById("ar-"+a.id);if(!st||!row)return;if(a.status==="done"){st.className="ast done";st.textContent="✅ "+nid;row.className="ar done"}else{st.className="ast fail";st.textContent="❌ Failed";row.className="ar fail";row.title=err||""}}
+function showDLBtn(){const tb=document.querySelector(".atb");if(!document.getElementById("dlb")){const b=document.createElement("button");b.id="dlb";b.className="abtn";b.textContent="⬇ Download Updated File";b.onclick=dlUpdated;tb.insertBefore(b,document.getElementById("rub"))}}
+function dlUpdated(){let upd=xmlRaw;for(const a of allAssets){if(a.status==="done"&&a.newId){upd=upd.replace(new RegExp("rbxassetid://"+a.id,"g"),"rbxassetid://"+a.newId);upd=upd.replace(new RegExp("\\b"+a.id+"\\b","g"),a.newId)}}const bl=new Blob([upd],{type:"application/xml"});const url=URL.createObjectURL(bl);const t=document.createElement("a");t.href=url;t.download="game_reuploaded.rbxlx";t.click();URL.revokeObjectURL(url);tst("✅ Downloaded — open in Studio!","ok")}
+
+function updDobList(){const el=document.getElementById("dol");if(!obfList.length){el.style.display="none";return}el.style.display="block";el.innerHTML=obfList.map(s=>`<div class="doi" onclick="ldObf('${s.path}')"><span class="don">⚠ ${s.name}</span><span class="dot2">${s.type}</span></div>`).join("")}
+function ldObf(path){const src=srcs[path];if(!src)return;document.getElementById("di").value=src;dobPath=path;detObf(src);tst("Loaded: "+path.split(".").pop())}
+async function runDob(){const code=document.getElementById("di").value.trim();if(!code){tst("Paste some code first");return}const btn=document.getElementById("dob-btn");btn.disabled=true;btn.textContent="Running...";document.getElementById("dhi").style.display="none";document.getElementById("do").style.display="none";document.getElementById("dof").style.display="none";document.getElementById("dld").style.display="flex";
+try{const res=await fetch("/api/deobfuscate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code})});const d=await res.json();if(d.error){tst("❌ "+d.error);document.getElementById("dhi").style.display="block";return}document.getElementById("do").value=d.result;document.getElementById("do").style.display="block";document.getElementById("dof").style.display="flex";document.getElementById("dri").textContent="✅ "+d.result.split("\n").length+" lines · Clean Luau";tst("✅ Deobfuscated!","ok")}catch(e){tst("❌ "+e.message)}finally{document.getElementById("dld").style.display="none";btn.disabled=false;btn.textContent="⚡ Deobfuscate"}}
+function clrDob(){document.getElementById("di").value="";document.getElementById("do").value="";document.getElementById("do").style.display="none";document.getElementById("dhi").style.display="block";document.getElementById("dof").style.display="none";dobPath=null;detObf("")}
+function cpDob(){const v=document.getElementById("do").value;if(!v)return;navigator.clipboard.writeText(v);tst("Copied!","ok")}
+function applyDob(){const v=document.getElementById("do").value;if(!v)return;sendTxt('Apply this cleaned script:\n```lua\n'+v+'\n```');swTab("chat",document.getElementById("tab-chat"))}
+async function rplStudio(){const v=document.getElementById("do").value;if(!v||!dobPath)return;try{await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Replace script at '"+dobPath+"' with this deobfuscated version",history:[],gameTree:gTree,sessionId:SID,_code:v,_path:dobPath})});tst("✅ Sent to Studio: "+dobPath,"ok")}catch(e){tst("❌ "+e.message)}}
+
+const SVCS=["Workspace","ServerScriptService","ServerStorage","ReplicatedStorage","StarterGui","StarterPlayerScripts","StarterCharacterScripts","StarterPack","ReplicatedFirst","Lighting"];
+const ICONS={Script:"S",LocalScript:"L",ModuleScript:"M",Folder:"📁",Model:"📦",Part:"□",Tool:"🔧",ScreenGui:"🖥"};
+const TCLS={Script:"ti-s",LocalScript:"ti-ls",ModuleScript:"ti-ms"};
+
+function rdTree(tree){const c=document.getElementById("tw");c.innerHTML="";function wk(obj,dep,pp){for(const[n,v] of Object.entries(obj)){if(n==="__type"||n==="__source"||typeof v!=="object"||!v)continue;const type=v.__type||"Folder";const path=pp?pp+"."+n:n;const icon=ICONS[type]||"·";const icls=TCLS[type]||"ti-f";const hasSrc=!!srcs[path];const isOb=obfList.some(s=>s.path===path);const nd=document.createElement("div");nd.className="tn"+(hasSrc?" c":"")+(isOb?" ob":"");nd.style.paddingLeft=(10+dep*11)+"px";nd.dataset.path=path;nd.innerHTML=`<span class="ti ${icls}">${icon}</span><span class="tn-n">${n}</span>${isOb?'<span class="ob-bdg">⚠</span>':""}`;if(hasSrc)nd.onclick=()=>opnSP(path,n,type,isOb);c.appendChild(nd);const kids=Object.keys(v).filter(k=>k!=="__type"&&k!=="__source"&&typeof v[k]==="object");if(kids.length)wk(v,dep+1,path)}}
+for(const s of SVCS)if(tree[s])wk({[s]:tree[s]},0,"");
+for(const[k,v] of Object.entries(tree))if(!SVCS.includes(k))wk({[k]:v},0,"")}
+function mrgTree(pt){if(!Object.keys(gTree).length){gTree=pt;rdTree(gTree);return}function m(b,i){for(const[k,v] of Object.entries(i)){if(k==="__type"||k==="__source")continue;if(!b[k])b[k]={};if(v.__type)b[k].__type=v.__type;m(b[k],v)}}m(gTree,pt);rdTree(gTree)}
+
+function opnSP(path,name,type,isOb){selSc={path,name,type,isOb};document.getElementById("spn").textContent="["+type+"] "+name;document.getElementById("sps").textContent=srcs[path]||"-- No source";document.getElementById("spob").className="spob"+(isOb?" on":"");document.getElementById("sp-dob").style.display=isOb?"block":"none";document.getElementById("spp").classList.add("on");document.querySelectorAll(".tn").forEach(n=>n.classList.remove("sel"));document.querySelector('.tn[data-path="'+path+'"]')?.classList.add("sel")}
+function clsSP(){document.getElementById("spp").classList.remove("on");document.querySelectorAll(".tn").forEach(n=>n.classList.remove("sel"));selSc=null}
+function fixSel(){if(!selSc)return;const s=srcs[selSc.path]||"";sendTxt('Fix this '+selSc.type+' at "'+selSc.path+'":\n```lua\n'+s+'\n```');clsSP()}
+function askSel(){if(!selSc)return;document.getElementById("inp").value='About "'+selSc.name+'": ';document.getElementById("inp").focus();clsSP()}
+function dobSel(){if(!selSc)return;document.getElementById("di").value=srcs[selSc.path]||"";dobPath=selSc.path;detObf(srcs[selSc.path]);clsSP();swTab("deob",document.getElementById("tab-deob"))}
+
+function showEb(e){document.getElementById("et").textContent=e.substring(0,100)+(e.length>100?"...":"");document.getElementById("eb").classList.remove("h")}
+function fixErr(){if(!lastErr)return;document.getElementById("eb").classList.add("h");sendTxt("Studio error:\n"+lastErr+"\n\nFix it.")}
+
+function rmWlc(){document.getElementById("wlc")?.remove()}
+function addMsg(role,text){rmWlc();const msgs=document.getElementById("msgs");const d=document.createElement("div");d.className="msg "+role;d.innerHTML=`<div class="mav">${role==="user"?"You":"AI"}</div><div class="mbody"><div class="mname">${role==="user"?"You":"Storm AI"}</div><div class="mtext"></div></div>`;msgs.appendChild(d);d.querySelector(".mtext").textContent=text;msgs.scrollTop=99999;return d}
+function strtAI(){streaming=true;aiRaw="";aiEl=addMsg("ai","");aiEl.querySelector(".mtext").innerHTML='<div class="typ"><span></span><span></span><span></span></div>'}
+function finAI(reply,acts){streaming=false;if(aiEl){aiEl.querySelector(".mtext").innerHTML=fmt(reply||aiRaw);(acts||[]).forEach(a=>aiEl.querySelector(".mbody").appendChild(mkAC(a)))}document.getElementById("sbtn").disabled=false;document.getElementById("msgs").scrollTop=99999;aiEl=null}
+function showAC(a){if(aiEl)aiEl.querySelector(".mbody").appendChild(mkAC(a))}
+function mkAC(a){const d=document.createElement("div");d.className="ac";d.innerHTML=`<div class="ah">✅ ${(a.action||"").replace("_"," ")} · <span style="color:#a0ffd0">${a.script_type||""}</span></div><div class="ap">${a.path||""}</div>`;return d}
+function fmt(t){return t.replace(/```(\w*)\n?([\s\S]*?)```/g,(_,l,c)=>{const e=c.trim().replace(/</g,"&lt;").replace(/>/g,"&gt;");return`<div class="cb"><div class="ch"><span>${l||"lua"}</span><button class="cbtn2" onclick="cpC(this)">Copy</button></div><pre class="cc">${e}</pre></div>`}).replace(/`([^`]+)`/g,"<code>$1</code>")}
+function cpC(btn){navigator.clipboard.writeText(btn.closest(".cb").querySelector("pre").textContent);btn.textContent="Copied!";setTimeout(()=>btn.textContent="Copy",2000)}
+
+async function send(){const inp=document.getElementById("inp"),txt=inp.value.trim();if(!txt||streaming)return;inp.value="";aR(inp);sendTxt(txt)}
+async function sendTxt(text){addMsg("user",text);document.getElementById("sbtn").disabled=true;strtAI();let ctx="";for(const[path,src] of Object.entries(srcs)){const n=path.split(".").pop();if(text.toLowerCase().includes(n.toLowerCase()))ctx+='\n\nScript "'+path+'":\n```lua\n'+src+'\n```'}
+const msgFull=ctx?text+"\n\n--- RELEVANT SCRIPTS:"+ctx:text;
+try{const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:msgFull,history:cHist,gameTree:gTree,scriptSources:Object.fromEntries(Object.entries(srcs).slice(0,15)),lastError:lastErr,sessionId:SID})});const d=await res.json();if(d.error){finAI("❌ "+d.error,[]);return}
+if(d.assetResults&&d.assetResults.length>0)showAssetResults(d.assetResults);
+cHist.push({role:"user",content:text});cHist.push(d.message);finAI(d.reply,d.actions)}catch(e){finAI("❌ Could not reach server.",[])}}
+
+function showAssetResults(results){if(!aiEl)return;const wrap=document.createElement("div");wrap.className="asset-found";wrap.innerHTML=`<div class="asset-found-hdr">🔍 Roblox assets found — used in the code above</div><div class="asset-found-list">${results.map(a=>`<div class="asset-card" title="ID: ${a.id}"><img src="${a.imageUrl||""}" onerror="this.style.background='#1a1a26';this.removeAttribute('src')" loading="lazy"><div class="asset-card-name">${a.name.substring(0,12)}</div><div class="asset-card-id">${a.id}</div></div>`).join("")}</div>`;aiEl.querySelector(".mbody").appendChild(wrap);}
+async function clrChat(){cHist=[];lastErr=null;document.getElementById("msgs").innerHTML='<div class="wlc" id="wlc" style="flex:1"><div class="wico">⚡</div><h2>Chat cleared</h2><p>Start a new conversation.</p></div>';document.getElementById("eb").classList.add("h")}
+function sug(el){document.getElementById("inp").value=el.textContent;send()}
+function hkey(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}
+function aR(el){el.style.height="auto";el.style.height=Math.min(el.scrollHeight,100)+"px"}
+
+// ── BOT VISIT ─────────────────────────────────────────────────
+const BOT_BRIDGE = "ws://localhost:4001";
+const BOT_HTTP   = "http://localhost:4001";
+let botWs        = null;
+let botConnected = false;
+
+function connectBotBridge() {
+  try {
+    botWs = new WebSocket(BOT_BRIDGE);
+    botWs.onopen = () => {
+      botConnected = true;
+      setBotPill(true);
+      document.getElementById("bot-status-bdg").textContent = "ON";
+      document.getElementById("bot-status-bdg").style.background = "var(--accent2)";
+      tst("✅ Bot bridge connected!","ok");
+    };
+    botWs.onmessage = e => {
+      const d = JSON.parse(e.data);
+      if (d.type==="config")    botLoadConfig(d.config);
+      if (d.type==="status")    botUpdateStatus(d);
+      if (d.type==="accounts")  botRenderAccounts(d.accounts);
+      if (d.type==="countdown") botShowCountdown(d.seconds);
+      if (d.type==="log")       botAddLog(d.msg, d.logType);
+      if (d.type==="logs")      d.logs.forEach(l=>botAddLog(l.msg,l.logType));
+    };
+    botWs.onclose = () => {
+      botConnected = false;
+      setBotPill(false);
+      document.getElementById("bot-status-bdg").textContent = "OFF";
+      document.getElementById("bot-status-bdg").style.background = "";
+      setTimeout(connectBotBridge, 3000);
+    };
+    botWs.onerror = () => botWs.close();
+  } catch(_) { setTimeout(connectBotBridge, 3000); }
+}
+
+function setBotPill(ok) {
+  const el = document.getElementById("bot-bridge-pill");
+  el.className = "bot-conn-pill" + (ok?" ok":"");
+  el.querySelector(".dot2").style.background = ok ? "var(--accent2)" : "var(--t2)";
+}
+
+function botLoadConfig(cfg) {
+  document.getElementById("bot-place").value   = cfg.placeId    || "";
+  document.getElementById("bot-join").value    = cfg.joinDelay  || 30;
+  document.getElementById("bot-rejoin").value  = cfg.rejoinDelay|| 15;
+  document.getElementById("bot-stagger").value = cfg.staggerDelay||2;
+  document.getElementById("bot-max").value     = cfg.maxCycles  || 0;
+  document.getElementById("bot-parallel").checked = cfg.parallelMode !== false;
+  document.getElementById("bot-cookies").value = (cfg.cookies||[]).join("\n");
+}
+
+function botUpdateStatus(d) {
+  document.getElementById("bot-cycle-txt").textContent  = "Cycle: "+(d.cycles||0);
+  const totalVisits = (d.accounts||[]).reduce((s,a)=>s+(a.visits||0),0);
+  document.getElementById("bot-visits-txt").textContent = "Total visits: "+totalVisits;
+}
+
+const BOT_STATUS_LABELS = {
+  ready:"⬜ Ready", joining:"🟡 Joining...", in_game:"🟢 In Game",
+  leaving:"🔵 Leaving", waiting:"⏳ Waiting", error:"🔴 Error",
+  rate_limited:"🔴 Rate limited", invalid:"⚫ Invalid"
+};
+
+function botRenderAccounts(accs) {
+  const grid = document.getElementById("bot-accs");
+  if (!accs||!accs.length) return;
+  grid.innerHTML = accs.map(a=>`
+    <div class="bot-acc ${a.status}">
+      <div class="bot-acc-name" title="${a.username}">${a.username||"?"}</div>
+      <div class="bot-acc-status" style="color:${botStatusColor(a.status)}">${BOT_STATUS_LABELS[a.status]||a.status}</div>
+      <div class="bot-acc-visits">${a.visits} visit${a.visits!==1?"s":""}</div>
+    </div>`).join("");
+}
+
+function botStatusColor(s) {
+  const colors = {joining:"var(--yellow)",in_game:"var(--accent2)",error:"var(--red)",rate_limited:"var(--red)",leaving:"var(--accent)",waiting:"var(--accent)",invalid:"var(--t2)"};
+  return colors[s]||"var(--t2)";
+}
+
+function botShowCountdown(secs) {
+  const el = document.getElementById("bot-cd");
+  el.style.display = secs>0?"block":"none";
+  document.getElementById("bot-cd-num").textContent = secs;
+}
+
+function botAddLog(msg, type) {
+  const log = document.getElementById("bot-log");
+  const div = document.createElement("div");
+  div.className = "bot-ll "+(type==="error"?"error":type==="warn"?"warn":type==="ok"?"ok":"");
+  div.textContent = msg;
+  log.appendChild(div);
+  if (log.children.length>150) log.removeChild(log.children[0]);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function botSaveConfig() {
+  if (!botConnected) { tst("❌ Bridge not running! Start bridge.js first"); return; }
+  const cookies = document.getElementById("bot-cookies").value.split("\n").map(c=>c.trim()).filter(c=>c.length>10);
+  const cfg = {
+    placeId:     document.getElementById("bot-place").value.trim(),
+    joinDelay:   +document.getElementById("bot-join").value    ||30,
+    rejoinDelay: +document.getElementById("bot-rejoin").value  ||15,
+    staggerDelay:+document.getElementById("bot-stagger").value ||2,
+    maxCycles:   +document.getElementById("bot-max").value     ||0,
+    parallelMode: document.getElementById("bot-parallel").checked,
+    cookies,
+  };
+  try {
+    await fetch(BOT_HTTP+"/config",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cfg)});
+    tst("✅ Settings saved — "+cookies.length+" cookie(s)","ok");
+  } catch(e) { tst("❌ Could not reach bridge: "+e.message); }
+}
+
+async function botStart() {
+  if (!botConnected) { tst("❌ Bridge not running! Double-click START.bat first"); return; }
+  try { await fetch(BOT_HTTP+"/start",{method:"POST"}); }
+  catch(e) { tst("❌ "+e.message); }
+}
+
+async function botStop() {
+  if (!botConnected) return;
+  try { await fetch(BOT_HTTP+"/stop",{method:"POST"}); }
+  catch(e) {}
+}
+
+// Connect to bridge when Bot Visit tab is opened
+document.getElementById("tab-bot").addEventListener("click", () => {
+  if (!botConnected) connectBotBridge();
+});
+</script>
+<script src="/config.js"></script>
+</body>
+</html>
