@@ -1,10 +1,9 @@
 // ================================================================
-//  /api/deobfuscate — Sends obfuscated script to Claude
-//  Claude deobfuscates and returns clean readable Luau
+//  /api/deobfuscate -- Now uses Groq (free) instead of Anthropic
 // ================================================================
 const https = require("https");
 
-function callClaude(key, code) {
+function callGroq(apiKey, code) {
   return new Promise((resolve, reject) => {
     const system = `You are an expert Roblox Luau reverse engineer and deobfuscator.
 Your job is to take obfuscated Luau/Lua code and rewrite it as clean, readable, well-commented Luau.
@@ -12,50 +11,47 @@ Your job is to take obfuscated Luau/Lua code and rewrite it as clean, readable, 
 You handle ALL types of obfuscation:
 
 1. STRING.CHAR() OBFUSCATION
-   - Decode string.char(72,101,108,108,111) → "Hello"
+   - Decode string.char(72,101,108,108,111) to actual strings
    - Evaluate all string.byte, string.rep, string.reverse patterns
-   - Replace all encoded strings with their actual values
 
 2. VARIABLE NAME SCRAMBLING
    - Rename single-letter or random vars (a,b,c,_0x1a2b) to meaningful names
-   - Infer purpose from context (e.g. a variable holding Players → name it "Players")
-   - Rename functions based on what they do
+   - Infer purpose from context
 
-3. LUARMOR / IRONBREW / BYTECODE OBFUSCATION
-   - These use a VM with opcodes. Identify the VM pattern.
-   - Extract and reconstruct the original logic as best as possible
-   - If full deobfuscation is impossible, explain the structure and what each section does
-   - Comment the VM chunks with what they likely do
+3. LUARMOR / IRONBREW / BYTECODE
+   - These use a VM with opcodes
+   - Extract and reconstruct the original logic
+   - Comment each section with what it likely does
 
-4. SAVEINSTANCE() / EXECUTOR DUMPS
-   - These often have decompiler artifacts: -- DECOMPILED, unknown variables, goto statements
+4. SAVEINSTANCE / EXECUTOR DUMPS
    - Clean up decompiler artifacts
    - Replace goto with proper if/while/repeat blocks
    - Fix incorrect upvalue references
-   - Restore proper Roblox API calls (game:GetService, Instance.new, etc.)
+   - Restore proper Roblox API calls
 
 OUTPUT RULES:
-- Return ONLY the cleaned Luau code, no explanation text outside the code
+- Return ONLY the cleaned Luau code
 - Add helpful comments explaining what each section does
 - Use proper Roblox Luau style: local variables, game:GetService(), task.wait()
-- If a section is truly impossible to deobfuscate (encrypted bytecode), wrap it in a comment block explaining what it likely does
-- Keep ALL original functionality intact — do not simplify or remove logic`;
+- If a section is truly impossible to deobfuscate, wrap it in a comment block`;
 
     const body = JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 8096,
-      system,
-      messages: [{ role: "user", content: `Deobfuscate this Roblox Luau script completely:\n\n\`\`\`lua\n${code}\n\`\`\`` }],
+      model:       "llama-3.3-70b-versatile",
+      max_tokens:  4000,
+      temperature: 0.1,
+      messages: [
+        { role: "system", content: system },
+        { role: "user",   content: `Deobfuscate this Roblox Luau script:\n\`\`\`lua\n${code.substring(0, 6000)}\n\`\`\`` }
+      ],
     });
 
     const req = https.request({
-      hostname: "api.anthropic.com",
-      path:     "/v1/messages",
+      hostname: "api.groq.com",
+      path:     "/openai/v1/chat/completions",
       method:   "POST",
       headers: {
-        "Content-Type":      "application/json",
-        "x-api-key":         key,
-        "anthropic-version": "2023-06-01",
+        "Content-Type":  "application/json",
+        "Authorization": `Bearer ${apiKey}`,
       },
     }, (res) => {
       let data = "";
@@ -63,8 +59,8 @@ OUTPUT RULES:
       res.on("end", () => {
         try {
           const p = JSON.parse(data);
-          if (p.error) reject(new Error(p.error.message));
-          else resolve(p.content?.[0]?.text || "");
+          if (p.error) reject(new Error(p.error.message || JSON.stringify(p.error)));
+          else resolve(p.choices?.[0]?.message?.content || "");
         } catch(e) { reject(e); }
       });
     });
@@ -85,13 +81,16 @@ module.exports = async (req, res) => {
     const { code } = req.body;
     if (!code) { res.status(400).json({ error: "No code provided" }); return; }
 
-    const key = process.env.ANTHROPIC_API_KEY;
-    if (!key)  { res.status(500).json({ error: "No API key" }); return; }
+    const key = process.env.GROQ_API_KEY;
+    if (!key)  { res.status(500).json({ error: "No GROQ_API_KEY in Vercel environment variables" }); return; }
 
-    const result = await callClaude(key, code);
+    const result = await callGroq(key, code);
 
-    // Extract code from markdown if Claude wrapped it
-    const cleaned = result.replace(/^```(?:lua|luau)?\n?/, "").replace(/\n?```$/, "").trim();
+    // Extract code from markdown if wrapped
+    const cleaned = result
+      .replace(/^```(?:lua|luau)?\n?/, "")
+      .replace(/\n?```$/, "")
+      .trim();
 
     res.status(200).json({ result: cleaned });
   } catch(e) {
