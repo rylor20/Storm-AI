@@ -1,7 +1,6 @@
 // ================================================================
-//  Storm AI v5 — chat.js
-//  Powered by Groq (FREE) — console.groq.com
-//  No file upload needed — just sync from Studio plugin!
+//  Storm AI — chat.js (Fixed token limit for Groq free tier)
+//  Uses llama-3.1-8b-instant — higher token limits, still smart
 // ================================================================
 const https  = require("https");
 const Pusher = require("pusher");
@@ -22,12 +21,12 @@ if (typeof global.errors       === "undefined") global.errors       = {};
 function callGroq(apiKey, messages, systemPrompt) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
-      model:       "llama-3.3-70b-versatile",
-      max_tokens:  4096,
+      model:       "llama-3.1-8b-instant",
+      max_tokens:  2048,
       temperature: 0.3,
       messages: [
         { role: "system", content: systemPrompt },
-        ...messages,
+        ...messages.slice(-6), // only last 6 messages to save tokens
       ],
     });
     const req = https.request({
@@ -59,7 +58,8 @@ function callGroq(apiKey, messages, systemPrompt) {
 function callAnthropic(key, messages, system) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
-      model: "claude-sonnet-4-20250514", max_tokens: 4096, system, messages,
+      model: "claude-sonnet-4-20250514", max_tokens: 4096, system,
+      messages: messages.slice(-6),
     });
     const req = https.request({
       hostname: "api.anthropic.com", path: "/v1/messages", method: "POST",
@@ -68,8 +68,11 @@ function callAnthropic(key, messages, system) {
       let data = "";
       res.on("data", c => data += c);
       res.on("end", () => {
-        try { const p = JSON.parse(data); if (p.error) reject(new Error(p.error.message)); else resolve(p.content?.[0]?.text || ""); }
-        catch(e) { reject(e); }
+        try {
+          const p = JSON.parse(data);
+          if (p.error) reject(new Error(p.error.message));
+          else resolve(p.content?.[0]?.text || "");
+        } catch(e) { reject(e); }
       });
     });
     req.on("error", reject); req.write(body); req.end();
@@ -96,7 +99,7 @@ async function searchRobloxAssets(keyword) {
   try {
     const data = await robloxGet(
       "catalog.roblox.com",
-      `/v1/search/items/details?keyword=${encodeURIComponent(keyword)}&limit=6`
+      `/v1/search/items/details?keyword=${encodeURIComponent(keyword)}&limit=4`
     );
     if (!data?.data?.length) return [];
     const ids = data.data.map(i => i.id).filter(Boolean);
@@ -106,7 +109,7 @@ async function searchRobloxAssets(keyword) {
     );
     const thumbMap = {};
     for (const t of thumbData?.data || []) thumbMap[t.targetId] = t.imageUrl || "";
-    return data.data.slice(0, 5).map(item => ({
+    return data.data.slice(0, 3).map(item => ({
       id: String(item.id), name: item.name || "Unknown",
       imageUrl: thumbMap[item.id] || "", type: item.itemType || "",
     }));
@@ -119,7 +122,6 @@ function extractSearchTerms(message) {
     /(?:gamepass|pass)\s+(?:called|named|for)?\s*["']?([a-z0-9 _-]+)["']?/gi,
     /(?:image|icon|thumbnail)\s+(?:of|for)\s+["']?([a-z0-9 _-]+)["']?/gi,
     /(?:shop|store).*?(?:with|for|selling)\s+["']?([a-z0-9 _-]+)["']?/gi,
-    /(?:add|put|include)\s+["']?([a-z0-9 _-]+)["']?\s+(?:gamepass|pass|item)/gi,
   ];
   for (const p of patterns) {
     let m;
@@ -142,85 +144,45 @@ function parseActions(text) {
 }
 
 function buildSystemPrompt(gameTree, scriptSources, lastError, assetResults) {
+  // Trim game tree to avoid token overflow
   const treeStr = gameTree && Object.keys(gameTree).length > 0
-    ? JSON.stringify(gameTree, null, 2)
-    : "(Game tree not synced yet — the Studio plugin needs to click Sync Game)";
+    ? JSON.stringify(gameTree).substring(0, 3000)
+    : "(No game tree yet — click Sync in Studio plugin)";
 
+  // Only include first 3 scripts, max 300 chars each
   const srcStr = scriptSources && Object.keys(scriptSources).length > 0
-    ? "\n\nSCRIPT SOURCES FROM GAME:\n" +
-      Object.entries(scriptSources).map(([p, s]) =>
-        `\n[${p}]\n\`\`\`lua\n${s}\n\`\`\``
-      ).join("\n")
+    ? "\n\nKEY SCRIPTS:\n" +
+      Object.entries(scriptSources).slice(0, 3).map(([p, s]) =>
+        `[${p}]\n${s.substring(0, 300)}`
+      ).join("\n\n")
     : "";
 
   const assetStr = assetResults && assetResults.length > 0
-    ? "\n\nROBLOX ASSET SEARCH RESULTS — use these IDs in your code:\n" +
-      assetResults.map(a => `• "${a.name}" — rbxassetid://${a.id}`).join("\n")
+    ? "\nASSETS FOUND:\n" + assetResults.map(a => `• ${a.name} — rbxassetid://${a.id}`).join("\n")
     : "";
 
-  return `You are Storm AI — an expert Roblox Luau developer assistant built directly into Roblox Studio.
-You have full access to the user's live game structure synced from their Studio plugin.
+  return `You are Storm AI — expert Roblox Luau developer inside Roblox Studio.
 
-GAME TREE (live from Studio):
-${treeStr}
+GAME TREE: ${treeStr}
 ${srcStr}
 ${assetStr}
-${lastError ? "\nLAST STUDIO ERROR:\n" + lastError + "\n" : ""}
+${lastError ? "\nLAST ERROR:\n" + lastError.substring(0, 200) : ""}
 
-════════════════════════════════════════
-SCRIPT TYPE RULES — ALWAYS FOLLOW
-════════════════════════════════════════
+SCRIPT TYPES:
+- "Script" → SERVER (ServerScriptService, Workspace)
+- "LocalScript" → CLIENT (StarterGui, StarterPlayerScripts)  
+- "ModuleScript" → LIBRARY (ReplicatedStorage, ServerStorage)
 
-Always include "script_type" in every write_script action.
-
-  "Script"       SERVER. Game logic, datastores, physics.
-                 Parent: ServerScriptService, ServerStorage, Workspace
-
-  "LocalScript"  CLIENT. GUIs, input, camera, animations.
-                 Parent: StarterGui, StarterPlayerScripts,
-                         StarterCharacterScripts, StarterPack, ReplicatedFirst
-
-  "ModuleScript" Shared library. No standalone execution.
-                 Parent: ReplicatedStorage (shared), ServerStorage (server-only)
-
-If feature needs BOTH server AND client — output BOTH as separate ACTION blocks.
-
-════════════════════════════════════════
-ACTION FORMAT
-════════════════════════════════════════
-
+ACTION FORMAT:
 <<<ACTION>>>
-{
-  "action": "write_script",
-  "script_type": "LocalScript",
-  "path": "StarterGui.ShopGui",
-  "code": "-- full Luau code here"
-}
+{"action":"write_script","script_type":"Script","path":"ServerScriptService.MyScript","code":"-- code here"}
 <<<END>>>
 
-Other actions:
-  {"action":"delete_script","path":"ServerScriptService.OldScript"}
-  {"action":"create_folder","path":"ReplicatedStorage.Modules"}
-
-Multiple scripts = multiple ACTION blocks.
-
-════════════════════════════════════════
-ASSET & IMAGE RULES
-════════════════════════════════════════
-- If ROBLOX ASSET SEARCH RESULTS shown above — use those IDs directly
-- ImageLabel.Image = "rbxassetid://ID"
-- For gamepasses: MarketplaceService:UserOwnsGamePassAsync(userId, ID)
-- No results found: Image = "rbxassetid://0" -- TODO: replace with real ID
-
-════════════════════════════════════════
-CODING RULES
-════════════════════════════════════════
-- Valid Luau ONLY. game:GetService() for all services.
-- task.wait() NOT wait(). task.spawn() NOT spawn().
-- Always add RemoteEvents in ReplicatedStorage for client↔server.
-- When fixing errors: address LAST STUDIO ERROR directly.
-- Check GAME TREE first — write_script updates existing scripts.
-- 1-3 sentence explanation max. Let the code speak.`;
+RULES:
+- Valid Luau only. Use game:GetService(). Use task.wait() not wait().
+- If feature needs server+client, output BOTH as separate ACTION blocks.
+- Fix errors using LAST ERROR above.
+- Be concise — short explanation + working code.`;
 }
 
 // ── Main handler ──────────────────────────────────────────────
@@ -232,34 +194,25 @@ module.exports = async (req, res) => {
   if (req.method !== "POST")   { res.status(405).end(); return; }
 
   try {
-    const {
-      message, history, gameTree, scriptSources,
-      lastError, sessionId
-    } = req.body;
+    const { message, history, gameTree, scriptSources, lastError, sessionId } = req.body;
 
     const groqKey      = process.env.GROQ_API_KEY;
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
     if (!groqKey && !anthropicKey) {
-      res.status(500).json({
-        error: "No API key found! Add GROQ_API_KEY in Vercel environment variables. Free key at console.groq.com"
-      });
+      res.status(500).json({ error: "No API key! Add GROQ_API_KEY in Vercel settings. Free at console.groq.com" });
       return;
     }
 
-    // Get latest game tree from global state if not provided
-    const tree = (gameTree && Object.keys(gameTree).length > 0)
-      ? gameTree
-      : (sessionId ? global.trees[sessionId] || {} : {});
-
+    const tree  = (gameTree && Object.keys(gameTree).length > 0) ? gameTree : (sessionId ? global.trees[sessionId] || {} : {});
     const error = lastError || (sessionId ? global.errors[sessionId] : null);
 
     // Auto search Roblox assets
     let assetResults = [];
     const terms = extractSearchTerms(message);
     if (terms.length > 0) {
-      const searches = await Promise.all(terms.slice(0, 3).map(searchRobloxAssets));
-      assetResults = searches.flat().slice(0, 8);
+      const searches = await Promise.all(terms.slice(0, 2).map(searchRobloxAssets));
+      assetResults = searches.flat().slice(0, 4);
     }
 
     const messages = [...(history || []), { role: "user", content: message }];
@@ -275,7 +228,6 @@ module.exports = async (req, res) => {
     const actions = parseActions(fullResponse);
     const display = fullResponse.replace(/<<<ACTION>>>[\s\S]*?<<<END>>>/g, "").trim();
 
-    // Push to Studio via Pusher + queue
     if (actions.length > 0 && sessionId) {
       try { await pusher.trigger("session-" + sessionId, "apply-actions", { actions }); }
       catch(e) { console.warn("Pusher:", e.message); }
@@ -283,12 +235,7 @@ module.exports = async (req, res) => {
       global.actionQueues[sessionId].push(...actions);
     }
 
-    res.status(200).json({
-      reply:        display,
-      actions,
-      assetResults,
-      message:      { role: "assistant", content: fullResponse },
-    });
+    res.status(200).json({ reply: display, actions, assetResults, message: { role: "assistant", content: fullResponse } });
 
   } catch(e) {
     console.error("Chat error:", e.message);
