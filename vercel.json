@@ -1,16 +1,26 @@
 {
   "version": 2,
-  "rewrites": [
-    { "source": "/api/chat", "destination": "/chat.js" },
-    { "source": "/api/config.js", "destination": "/config.js" },
-    { "source": "/api/deobfuscate", "destination": "/deobfuscate.js" },
-    { "source": "/api/get-actions", "destination": "/get-actions.js" },
-    { "source": "/api/pusher-auth", "destination": "/pusher-auth.js" },
-    { "source": "/api/report-error", "destination": "/report-error.js" },
-    { "source": "/api/reupload-assets", "destination": "/reupload-assets.js" },
-    { "source": "/api/scan-assets", "destination": "/scan-assets.js" },
-    { "source": "/api/search-roblox", "destination": "/search-roblox.js" },
-    { "source": "/api/sync-tree", "destination": "/sync-tree.js" },
-    { "source": "/(.*)", "destination": "/index.html" }
+  "builds": [
+    {
+      "src": "*.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    { "src": "/api/chat", "dest": "/chat.js" },
+    { "src": "/api/config.js", "dest": "/config.js" },
+    { "src": "/api/deobfuscate", "dest": "/deobfuscate.js" },
+    { "src": "/api/get-actions", "dest": "/get-actions.js" },
+    { "src": "/api/pusher-auth", "dest": "/pusher-auth.js" },
+    { "src": "/api/report-error", "dest": "/report-error.js" },
+    { "src": "/api/reupload-assets", "dest": "/reupload-assets.js" },
+    { "src": "/api/scan-assets", "dest": "/scan-assets.js" },
+    { "src": "/api/search-roblox", "dest": "/search-roblox.js" },
+    { "src": "/api/sync-tree", "dest": "/sync-tree.js" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
