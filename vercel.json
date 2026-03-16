@@ -1,7 +1,30 @@
 {
   "version": 2,
+  "functions": {
+    "chat.js": { "runtime": "nodejs18.x" },
+    "config.js": { "runtime": "nodejs18.x" },
+    "deobfuscate.js": { "runtime": "nodejs18.x" },
+    "get-actions.js": { "runtime": "nodejs18.x" },
+    "parse-rbxlx.js": { "runtime": "nodejs18.x" },
+    "pusher-auth.js": { "runtime": "nodejs18.x" },
+    "report-error.js": { "runtime": "nodejs18.x" },
+    "reupload-assets.js": { "runtime": "nodejs18.x" },
+    "scan-assets.js": { "runtime": "nodejs18.x" },
+    "search-roblox.js": { "runtime": "nodejs18.x" },
+    "sync-tree.js": { "runtime": "nodejs18.x" }
+  },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)",     "destination": "/public/$1" }
+    { "source": "/api/chat", "destination": "/chat.js" },
+    { "source": "/api/config", "destination": "/config.js" },
+    { "source": "/api/deobfuscate", "destination": "/deobfuscate.js" },
+    { "source": "/api/get-actions", "destination": "/get-actions.js" },
+    { "source": "/api/parse-rbxlx", "destination": "/parse-rbxlx.js" },
+    { "source": "/api/pusher-auth", "destination": "/pusher-auth.js" },
+    { "source": "/api/report-error", "destination": "/report-error.js" },
+    { "source": "/api/reupload-assets", "destination": "/reupload-assets.js" },
+    { "source": "/api/scan-assets", "destination": "/scan-assets.js" },
+    { "source": "/api/search-roblox", "destination": "/search-roblox.js" },
+    { "source": "/api/sync-tree", "destination": "/sync-tree.js" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
